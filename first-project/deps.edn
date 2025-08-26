@@ -1,0 +1,8 @@
+{:paths ["src" "test"]
+
+ ;; Although the command, `clj --nversion`, prints the string, !1.12.1,1550
+ ;; for `clj`. either the `deps` spec or maven itself cannot understand
+ ;; the fourth component (1550). Removing it allows maven to find clojure.
+ :deps {org.clojure/clojure {:mvn/version "1.12.1"}}
+
+ :aliases {:hello {:exec-fn first-project.core/-main}}} ;
