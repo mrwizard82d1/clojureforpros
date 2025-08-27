@@ -52,3 +52,45 @@
 
 ;; Generating lazy sequences
 ;;
+
+;; Similar to `range`, the function `repeat` has arities that generate a
+;; fixed sequence, `(repeat 5 "hi")`, and that generate an infinite
+;; sequence `(repeat "hi")`.
+(repeat 5 "hi")
+
+(take 3 (repeat "hi"))
+
+;; The `repeatedly` function creates sequences by invoking repeatedly
+;; invoking a function. (Our example uses `rand-int` to generate
+;; different values.)
+(repeatedly 5 #(rand-int 10))
+
+(take 5 (repeatedly #(rand-int 10)))
+
+;; Clojure 1.11 introduces `iterate`. The function, `iterate`, introduces
+;; a sequence created by calling a function repeatedly. For example, the
+;; form `(iterate (comp inc inc) 0)` returns:
+;; - 0
+;; - (inc (inc 0))
+;; - (inc (inc (inc (inc 0))))
+;; - And so on.
+(take 10 (iterate (comp inc inc) 0))
+
+;; Manipulating lazy sequences
+;;
+
+;; `take` "extracts" a specified number of items form a sequence.
+(->> (range) (take 10))
+
+(take 10 (range))
+
+;; Similarly, `take-while`, takes items from a sequence while a condition
+;; is truthy.
+(take-while #(< % 10) (range))
+
+;; The `drop` function consumes and ignores values in a sequence
+(drop 10 (range 20))
+(take 5 (drop 5 (range)))
+
+;; And `drop-while` behaves similarly to `take-while`.
+(drop-while #(< % 12) (range 20))
