@@ -86,7 +86,7 @@
 
 ;; Similarly, `take-while`, takes items from a sequence while a condition
 ;; is truthy.
-(take-while #(< % 10) (range))
+(take-while #(< % 12) (range))
 
 ;; The `drop` function consumes and ignores values in a sequence
 (drop 10 (range 20))
@@ -94,3 +94,44 @@
 
 ;; And `drop-while` behaves similarly to `take-while`.
 (drop-while #(< % 12) (range 20))
+
+;; The "Hello, World!" of functional languages: the Fibonacci sequence
+(defn fib
+  "Returns the first `n` Fibonacci numbers."
+  [n]
+  (->> (range 2)
+       (iterate (fn [[head neck]]
+                  ;; The function `+'` supports arbitrary precision.
+                  (list neck (+' head neck))))
+       (map last)
+       (take n)
+       ;; Remember that `cons` puts its argument at the **head** of the list.
+       (cons 0)))
+(fib 0)
+(fib 1)
+(fib 5)
+(fib 10)
+(last (fib 1000))
+
+;; Creating lazy sequences
+;;
+
+;; We create our own lazy sequences by using the `lazy-seq` function. (But
+;; remember, one may not actually need to create this kind of a sequence.)
+(defn our-range
+  ([] (our-range 0 ##Inf 1))  ;; A range from 0 to infinity by 1
+  ([end] (our-range 0 end 1))  ;; A range from 0 to `end `by 1
+  ([start end] (our-range start end 1))
+  ([start end step]
+   ((fn bod  ;; We name the function body `bod` so that we can recurse
+      [i]
+      (lazy-seq
+       (when (< i end)
+         (cons i (bod (+ i step)))))) start)))
+(our-range 2 7 2)
+(range 7)
+(range 2 7)
+(our-range 7)
+(our-range 2 7)
+(our-range 2 7 2)
+(take 5 (our-range))
