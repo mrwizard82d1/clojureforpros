@@ -20,7 +20,7 @@ greeting
 
 ;; An alternative using the "reader macro", `#'`
 (alter-var-root #'greeting (fn [v] "hello, again"))
-greetingA
+greeting
 
 ;; Remember, although one can alter a `var`, one is encouraged to **not**
 ;; alter vars. Instead, use other mechanisms like an `atom`.
@@ -28,7 +28,7 @@ greetingA
 ;; Atoms
 ;;
 
-;; An `atom` provides uncoordinate, synchronous access to a value.
+;; An `atom` provides **uncoordinate, synchronous** access to a value.
 ;;
 ;; They are the most common way of managing state within Clojure.
 
@@ -90,3 +90,78 @@ greetingA
 ;; `(deref counter)`
 (deref counter)
 @counter
+
+;; Agents
+;;
+
+;; An `agent` is similar to an `atom` but **autonomous**; that is, it
+;; executes in its own thread.
+
+;; An `agent` provides **uncoordinate, asynchronous** access to the state
+;; of an object.
+(def count-agent (agent 0))
+
+;; We use `send` to delegate work to be performed asynchronously by
+;; the agent. The agent will execute the function (work) passing its value
+;; to the function to execute. For example,
+(send count-agent inc)
+@count-agent
+(deref count-agent)
+
+;; *** WARNING! ***
+;; Beware running the next "block" of code. Running the entire block can
+;; fall afoul of the race condition between an agent (on another thread!)
+;; trying to write to the file that the "interactive thread" has already
+;; deleted.
+;; *** WARNING! ***
+
+;; One can use `send-off` to send blocking I/O work to the agent.
+(send-off count-agent #(spit "count.txt" %))
+(slurp "count.txt")
+
+;; Note that after calling `send-off`, the value of the agent
+;; becomes `nil`.
+(def another-agent (agent 0))
+@another-agent
+(send-off another-agent #(spit "count.txt" %))
+@another-agent
+(clojure.java.io/delete-file "count.txt")
+
+;; Refs
+;;
+
+;; Use a `ref` to manage the **coordinated, synchronous** state of
+;; (one or) more values.
+;;
+;; The most popular example of a `ref` is the transfer of money from
+;; one bank acount to another.
+;;
+;; This usage leads to the term, "software transactional memory".
+
+;; We have two bank accounts, want to transfer money from one account
+;; to the other, and ensure that either **both** accounts "see" the
+;; transfer or **neither** account "sees" the transfer.
+(def alice (ref 100))
+(def bob (ref 12))
+(defn transfer-funds
+  [amount from to]
+  (dosync
+   ;; `ensure` gets the current balance of the account locking
+   ;; that value so that no other thread can change it.
+   ;; `ref-set` changes the current balance of the account
+   ;; These functions must be called within a `dosync` function
+   ;;
+   ;; Remember that `ensure` and `ref-set` only work **within** a
+   ;; transaction. The `dosync` function establishes the transaction
+   ;; "boundaries".
+   (let [from-amount (ensure from)
+         to-amount (ensure to)]
+     (ref-set from (- from-amount amount))
+     (ref-set to (+ to-amount amount)))))
+(transfer-funds 10 alice bob)
+@alice
+@bob
+
+;; Although software transactional memory is "cool," it is rarely used
+;; in practice. Instead, practitioners typically use a database to handle
+;; these operations.
